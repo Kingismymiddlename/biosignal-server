@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BioSignal — Biomarker Discovery AI</title>
+<style>
+  :root {
+    --bg: #080f1a; --surface: #0f1d2e; --surface2: #162437; --border: #1c3048;
+    --accent: #06b6d4; --accent2: #22d3ee; --accent-dim: rgba(6,182,212,0.12);
+    --green: #10b981; --amber: #f59e0b; --red: #ef4444; --purple: #a855f7; --indigo: #6366f1;
+    --text: #e2e8f0; --muted: #64748b; --subtle: #94a3b8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; min-height: 100vh; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .logo { display: flex; align-items: center; gap: 12px; }
+  .logo-icon { width: 36px; height: 36px; background: linear-gradient(135deg, #06b6d4, #0891b2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .logo-text { font-size: 1.1rem; font-weight: 700; }
+  .logo-sub { font-size: 0.75rem; color: var(--muted); }
+  .badge { background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent2); font-size: 0.7rem; padding: 3px 10px; border-radius: 20px; }
+
+  .main { max-width: 1300px; margin: 0 auto; padding: 2rem; }
+
+  .hero { text-align: center; padding: 3rem 0 2rem; }
+  .hero h1 { font-size: 2.4rem; font-weight: 800; background: linear-gradient(135deg, #06b6d4, #10b981, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.75rem; }
+  .hero p { color: var(--subtle); font-size: 1.05rem; max-width: 620px; margin: 0 auto 2rem; }
+
+  .search-box { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
+  .search-row { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 1rem; margin-bottom: 1rem; align-items: end; }
+  .input-wrap label { display: block; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  input, select { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 0.95rem; padding: 10px 14px; outline: none; transition: border 0.2s; font-family: inherit; }
+  input:focus, select:focus { border-color: var(--accent); }
+  select option { background: #0f1d2e; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip { background: var(--accent-dim); border: 1px solid var(--border); color: var(--subtle); font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; cursor: pointer; transition: all 0.2s; }
+  .chip:hover { border-color: var(--accent); color: var(--accent2); }
+  .btn-primary { background: linear-gradient(135deg, #06b6d4, #0891b2); border: none; border-radius: 10px; color: #fff; font-size: 0.95rem; font-weight: 600; padding: 12px 28px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; text-align: center; }
+  .stat-val { font-size: 1.8rem; font-weight: 800; color: var(--accent2); }
+  .stat-label { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+  .status { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem 1.5rem; margin-bottom: 1.5rem; display: none; }
+  .status.active { display: flex; align-items: center; gap: 12px; }
+  .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text { color: var(--subtle); font-size: 0.9rem; }
+
+  .results { display: none; }
+  .results.active { display: block; }
+  .section-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 1rem; }
+
+  /* SUMMARY CARD */
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .summary-card h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent2); margin-bottom: 0.75rem; }
+
+  /* GRADE BAND */
+  .meta-band { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .meta-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.8rem 1.2rem; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 120px; }
+  .meta-pill-val { font-size: 1.4rem; font-weight: 800; }
+  .meta-pill-label { font-size: 0.7rem; color: var(--muted); }
+
+  /* BIOMARKER CARDS */
+  .bm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+  .bm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; transition: border-color 0.2s; }
+  .bm-card:hover { border-color: var(--accent); }
+  .bm-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+  .bm-name { font-size: 1.25rem; font-weight: 800; color: var(--text); }
+  .bm-type { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .role-badge { font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+  .role-Diagnostic { background: rgba(6,182,212,0.15); color: var(--accent2); border: 1px solid rgba(6,182,212,0.3); }
+  .role-Prognostic { background: rgba(168,85,247,0.15); color: var(--purple); border: 1px solid rgba(168,85,247,0.3); }
+  .role-Predictive { background: rgba(245,158,11,0.15); color: var(--amber); border: 1px solid rgba(245,158,11,0.3); }
+  .role-Theranostic { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+  .bm-rationale { font-size: 0.85rem; color: var(--subtle); line-height: 1.6; margin-bottom: 1rem; }
+  .bm-meta { display: flex; flex-wrap: wrap; gap: 6px; }
+  .meta-tag { font-size: 0.7rem; padding: 3px 8px; border-radius: 6px; }
+  .t-specimen { background: rgba(6,182,212,0.1); color: var(--accent); }
+  .t-assay { background: rgba(99,102,241,0.1); color: #818cf8; }
+  .t-status { background: rgba(16,185,129,0.1); color: var(--green); }
+  .t-value { background: rgba(245,158,11,0.1); color: var(--amber); }
+  .t-perf { background: rgba(100,116,139,0.1); color: var(--muted); font-size: 0.68rem; }
+
+  /* PANEL */
+  .panel-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .panel h3 { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin-bottom: 1rem; }
+  .pill-item { background: var(--surface2); border-radius: 8px; padding: 10px 14px; font-size: 0.85rem; color: var(--subtle); margin-bottom: 8px; border-left: 3px solid var(--accent); line-height: 1.5; }
+  .pill-item.purple { border-left-color: var(--purple); }
+  .pill-item.amber { border-left-color: var(--amber); }
+
+  /* BEST PANEL */
+  .best-panel-card { background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(16,185,129,0.08)); border: 1px solid var(--accent); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .best-panel-card h3 { color: var(--accent2); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem; }
+  .best-panel-name { font-size: 1.1rem; font-weight: 700; margin-bottom: 0.75rem; }
+  .best-panel-components { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .bpc { background: var(--accent-dim); border: 1px solid var(--accent); color: var(--accent2); padding: 4px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+  .best-panel-rationale { font-size: 0.85rem; color: var(--subtle); line-height: 1.6; }
+
+  .empty { text-align: center; padding: 4rem 2rem; color: var(--muted); }
+  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+  @media (max-width: 768px) {
+    .search-row { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2,1fr); }
+    .panel-row { grid-template-columns: 1fr; }
+    .bm-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🔬</div>
+    <div>
+      <div class="logo-text">BioSignal</div>
+      <div class="logo-sub">Biomarker Discovery AI · PubMed + DisGeNET</div>
+    </div>
+  </div>
+  <div class="badge">● Llama 3.3 · Free · No login</div>
+</div>
+
+<div class="main">
+  <div class="hero">
+    <h1>Identify Biomarkers with AI</h1>
+    <p>Enter any disease or condition. BioSignal mines biomarker literature and gene-disease associations to surface diagnostic, prognostic, and predictive biomarker candidates — ranked, explained, and clinically contextualised.</p>
+  </div>
+
+  <div class="search-box">
+    <div class="search-row">
+      <div class="input-wrap">
+        <label>Disease / Condition</label>
+        <input id="diseaseInput" type="text" placeholder="e.g. Lupus, Parkinson's disease, Breast cancer..."/>
+      </div>
+      <div class="input-wrap">
+        <label>Biomarker Type</label>
+        <select id="bmType">
+          <option value="diagnostic">Diagnostic</option>
+          <option value="prognostic">Prognostic</option>
+          <option value="predictive">Predictive</option>
+          <option value="all types">All Types</option>
+        </select>
+      </div>
+      <div class="input-wrap">
+        <label>Patient Context (optional)</label>
+        <input id="contextInput" type="text" placeholder="e.g. early stage, female, 40-60yr..."/>
+      </div>
+      <button class="btn-primary" id="searchBtn" onclick="runSearch()">Find Biomarkers →</button>
+    </div>
+    <div class="chips">
+      <span style="font-size:0.72rem;color:var(--muted);margin-right:4px;">Try:</span>
+      <span class="chip" onclick="setD('Systemic lupus erythematosus')">Lupus (SLE)</span>
+      <span class="chip" onclick="setD('Breast cancer')">Breast Cancer</span>
+      <span class="chip" onclick="setD('Alzheimer disease')">Alzheimer's</span>
+      <span class="chip" onclick="setD('Rheumatoid arthritis')">Rheumatoid Arthritis</span>
+      <span class="chip" onclick="setD('Sepsis')">Sepsis</span>
+      <span class="chip" onclick="setD('Parkinson disease')">Parkinson's</span>
+      <span class="chip" onclick="setD('Colorectal cancer')">Colorectal Cancer</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-val">1M+</div><div class="stat-label">Biomarker Publications</div></div>
+    <div class="stat"><div class="stat-val">628K+</div><div class="stat-label">Gene-Disease Associations</div></div>
+    <div class="stat"><div class="stat-val">4</div><div class="stat-label">Biomarker Role Types</div></div>
+    <div class="stat"><div class="stat-val">$0</div><div class="stat-label">Cost to Use</div></div>
+  </div>
+
+  <div class="status" id="statusBar">
+    <div class="spinner"></div>
+    <span class="status-text" id="statusText">Searching biomarker literature...</span>
+  </div>
+
+  <div class="results" id="results"></div>
+
+  <div class="empty" id="emptyState">
+    <div class="empty-icon">🧪</div>
+    <div style="font-size:1rem;color:var(--subtle);margin-bottom:0.5rem;">Enter a disease to discover biomarkers</div>
+    <div style="font-size:0.85rem;">BioSignal pulls real PubMed and DisGeNET data then synthesises the biomarker landscape with AI</div>
+  </div>
+</div>
+
+<script>
+function setD(d) { document.getElementById('diseaseInput').value = d; }
+function setStatus(m) { document.getElementById('statusBar').classList.add('active'); document.getElementById('statusText').textContent = m; }
+function hideStatus() { document.getElementById('statusBar').classList.remove('active'); }
+
+function drawRing(val, color) {
+  const r = 28, circ = 2 * Math.PI * r, fill = (val/100)*circ;
+  return `<svg width="68" height="68" viewBox="0 0 68 68" style="transform:rotate(-90deg)">
+    <circle cx="34" cy="34" r="${r}" fill="none" stroke="#1c3048" stroke-width="7"/>
+    <circle cx="34" cy="34" r="${r}" fill="none" stroke="${color}" stroke-width="7" stroke-dasharray="${fill} ${circ}" stroke-linecap="round"/>
+  </svg><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:${color}">${val}</div>`;
+}
+
+const gradeColor = {A:'#10b981',B:'#06b6d4',C:'#f59e0b',D:'#ef4444'};
+
+async function runSearch() {
+  const disease = document.getElementById('diseaseInput').value.trim();
+  if (!disease) { alert('Please enter a disease or condition.'); return; }
+  const bmType = document.getElementById('bmType').value;
+  const context = document.getElementById('contextInput').value.trim();
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('results').classList.remove('active');
+
+  try {
+    setStatus('Searching PubMed biomarker literature...');
+    const [pmResp, dgResp] = await Promise.all([
+      fetch(`/pubmed-biomarkers?disease=${encodeURIComponent(disease)}&biomarker_type=${encodeURIComponent(bmType)}`),
+      fetch(`/disgenet?disease=${encodeURIComponent(disease)}`)
+    ]);
+    const pmData = await pmResp.json();
+    const dgData = await dgResp.json();
+
+    setStatus('AI synthesising biomarker candidates...');
+    const aiResp = await fetch('/analyze', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ disease, biomarker_type: bmType, patient_context: context, papers: pmData||[], genes: dgData||[] })
+    });
+    const aiData = await aiResp.json();
+    hideStatus();
+    if (aiData.error) { alert('Error: ' + aiData.error); btn.disabled=false; return; }
+    renderResults(disease, aiData, pmData);
+  } catch(e) {
+    hideStatus();
+    alert('Error: ' + e.message);
+  }
+  btn.disabled = false;
+}
+
+function renderResults(disease, ai, papers) {
+  const res = document.getElementById('results');
+  const bms = ai.biomarkers || [];
+  const bp = ai.best_panel || {};
+  const conf = ai.confidence || 0;
+  const grade = ai.evidence_grade || 'C';
+  const gc = gradeColor[grade] || '#64748b';
+
+  res.innerHTML = `
+    <div class="summary-card">
+      <h3>📊 Biomarker Landscape — ${disease}</h3>
+      <p style="color:var(--subtle);line-height:1.7;font-size:0.92rem">${ai.disease_summary || ''}</p>
+    </div>
+
+    <div class="meta-band">
+      <div class="meta-pill">
+        <div style="position:relative;width:68px;height:68px">${drawRing(conf,'#06b6d4')}</div>
+        <span class="meta-pill-label">AI Confidence</span>
+      </div>
+      <div class="meta-pill">
+        <div class="meta-pill-val" style="color:${gc}">${grade}</div>
+        <span class="meta-pill-label">Evidence Grade</span>
+      </div>
+      <div class="meta-pill">
+        <div class="meta-pill-val" style="color:#10b981">${bms.length}</div>
+        <span class="meta-pill-label">Biomarkers Found</span>
+      </div>
+      <div class="meta-pill">
+        <div class="meta-pill-val" style="color:#a855f7">${papers.filter(p=>p.title).length}</div>
+        <span class="meta-pill-label">Papers Analysed</span>
+      </div>
+    </div>
+
+    ${bp.name ? `
+    <div class="best-panel-card">
+      <h3>⭐ Recommended Biomarker Panel</h3>
+      <div class="best-panel-name">${bp.name}</div>
+      <div class="best-panel-components">${(bp.components||[]).map(c=>`<span class="bpc">${c}</span>`).join('')}</div>
+      <div class="best-panel-rationale">${bp.rationale||''}</div>
+    </div>` : ''}
+
+    <p class="section-title">${bms.length} Biomarker Candidates</p>
+    <div class="bm-grid">
+      ${bms.map(b => `
+        <div class="bm-card">
+          <div class="bm-header">
+            <div>
+              <div class="bm-name">${b.name}</div>
+              <div class="bm-type">${b.type}</div>
+            </div>
+            <span class="role-badge role-${b.role||'Diagnostic'}">${b.role}</span>
+          </div>
+          <div class="bm-rationale">${b.rationale}</div>
+          <div class="bm-meta">
+            <span class="meta-tag t-specimen">🧬 ${b.specimen}</span>
+            <span class="meta-tag t-assay">🔭 ${b.assay_type}</span>
+            <span class="meta-tag t-status">✓ ${b.current_status}</span>
+            <span class="meta-tag t-value">★ ${b.clinical_value} value</span>
+            ${b.sensitivity_specificity ? `<span class="meta-tag t-perf">${b.sensitivity_specificity}</span>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="panel-row">
+      <div class="panel">
+        <h3>🔬 Emerging Detection Technologies</h3>
+        ${(ai.emerging_technologies||[]).map(t=>`<div class="pill-item purple">${t}</div>`).join('')}
+      </div>
+      <div class="panel">
+        <h3>⚠️ Clinical Challenges &amp; Regulatory</h3>
+        <div class="pill-item amber">${ai.clinical_challenges||''}</div>
+        <div class="pill-item amber" style="margin-top:8px">${ai.regulatory_landscape||''}</div>
+      </div>
+    </div>
+
+    ${papers.filter(p=>p.title).length > 0 ? `
+    <div class="panel">
+      <h3>📄 Literature Sources (${papers.filter(p=>p.title).length} papers)</h3>
+      ${papers.filter(p=>p.title).slice(0,5).map(p=>`<div class="pill-item">${p.title}${p.year?' ('+p.year+')':''}</div>`).join('')}
+    </div>` : ''}
+  `;
+  res.classList.add('active');
+  res.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('diseaseInput').addEventListener('keydown', e => { if(e.key==='Enter') runSearch(); });
+</script>
+</body>
+</html>
